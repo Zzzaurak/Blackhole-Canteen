@@ -4,6 +4,7 @@ export default defineConfig({
   fullyParallel: false,
   use: {
     baseURL: "http://127.0.0.1:5173",
+    timezoneId: "Asia/Shanghai",
     viewport: { width: 1440, height: 1000 },
     launchOptions: { channel: "chrome" },
     reducedMotion: "reduce",

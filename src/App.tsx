@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -45,9 +39,10 @@ import { draw, isOpen, localDateTime, recommend } from "./engine";
 import { loadStore, parseStore, STORAGE_KEY } from "./storage";
 import type { Canteen, Conditions, Meal, Recommendation, Store } from "./types";
 import Galaxy from "./Galaxy";
+import StarBody from "./StarBody";
+import { COPY } from "./copy";
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}assets/${path}`;
-const VIDEO_URL = import.meta.env.VITE_GALAXY_VIDEO as string | undefined;
 const download = (content: string, name: string) => {
   const url = URL.createObjectURL(
     new Blob([content], { type: "application/json" }),
@@ -58,34 +53,6 @@ const download = (content: string, name: string) => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-function StarBody({
-  canteen,
-  small = false,
-}: {
-  canteen: Canteen;
-  small?: boolean;
-}) {
-  return (
-    <span
-      className={`star-body ${canteen.kind} ${small ? "small" : ""}`}
-      style={
-        {
-          "--star-color": canteen.color,
-          "--star-size": `${small ? 28 : canteen.size}px`,
-        } as CSSProperties
-      }
-    >
-      <span className="star-surface" />
-      {canteen.companions.map((c, i) => (
-        <i
-          key={c.name}
-          className={`companion companion-${i}`}
-          style={{ background: c.color }}
-        />
-      ))}
-    </span>
-  );
-}
 function Modal({
   title,
   children,
@@ -214,10 +181,7 @@ function MealForm({
   const [note, setNote] = useState(meal?.note ?? "");
   const [submitting, setSubmitting] = useState(false);
   return (
-    <Modal
-      title={meal ? "修改这次吞星" : "记录一顿好好吃的饭"}
-      onClose={onClose}
-    >
+    <Modal title={meal ? COPY.meal.edit : COPY.meal.create} onClose={onClose}>
       <form
         className="meal-form"
         onSubmit={(e) => {
@@ -310,12 +274,12 @@ function MealForm({
             value={note}
             maxLength={1000}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="今天的快乐，是从哪一口开始的？"
+            placeholder={COPY.meal.placeholder}
             rows={3}
           />
         </label>
         <button className="primary" disabled={submitting}>
-          <Sparkles size={17} /> 保存这次吞星
+          <Sparkles size={17} /> {COPY.meal.save}
         </button>
         <p className="fineprint centered">
           只保存在这个浏览器里。你的评价会影响下次相遇。
@@ -337,6 +301,17 @@ export default function App() {
     mood: "normal",
     preferences: store.preferences,
   });
+  const [followClock, setFollowClock] = useState(true);
+  useEffect(() => {
+    if (!followClock) return;
+    const tick = () =>
+      setConditions((previous) => ({
+        ...previous,
+        time: localDateTime().slice(11),
+      }));
+    const interval = setInterval(tick, 15_000);
+    return () => clearInterval(interval);
+  }, [followClock]);
   const [result, setResult] = useState<Recommendation | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -344,8 +319,6 @@ export default function App() {
   const [paused, setPaused] = useState(
     () => matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
-  const [videoError, setVideoError] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [detail, setDetail] = useState<Canteen | null>(null);
   const [panel, setPanel] = useState<"atlas" | "settings" | null>(null);
   const [mealDialog, setMealDialog] = useState<{
@@ -378,12 +351,6 @@ export default function App() {
     const t = setTimeout(() => setCelebrate(null), 2200);
     return () => clearTimeout(t);
   }, [celebrate]);
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (paused) v.pause();
-    else void v.play().catch(() => setVideoError(true));
-  }, [paused, videoError]);
   const notify = (message: string) => setToast(message);
   const commit = (next: Store) => {
     if (recoveryNeeded.current && !pendingImport) {
@@ -483,10 +450,6 @@ export default function App() {
     : result
       ? canteenById(result.canteenId)
       : null;
-  const mascotStyle = {
-    left: activeStar ? `${Math.max(15, activeStar.position[0] - 10)}%` : "49%",
-    top: activeStar ? `${Math.min(68, activeStar.position[1] + 5)}%` : "47%",
-  };
   const filteredMeals = [...store.meals]
     .filter((m) => filter === "all" || m.canteenId === filter)
     .sort((a, b) => b.eatenAt.localeCompare(a.eatenAt));
@@ -504,8 +467,9 @@ export default function App() {
             <Orbit size={27} />
           </span>
           <span>
-            今天吞哪颗星<span className="brand-dot">?</span>
-            <small>STELLAR BITES</small>
+            {COPY.brand.name}
+            <span className="brand-dot">?</span>
+            <small>{COPY.brand.english}</small>
           </span>
         </button>
         <nav aria-label="主导航">
@@ -513,13 +477,13 @@ export default function App() {
             className={page === "home" ? "active" : ""}
             onClick={() => setPage("home")}
           >
-            <Compass size={17} /> 星际觅食
+            <Compass size={17} /> {COPY.nav.home}
           </button>
           <button
             className={page === "journal" ? "active" : ""}
             onClick={() => setPage("journal")}
           >
-            <BookOpen size={17} /> 吞星日志{" "}
+            <BookOpen size={17} /> {COPY.nav.journal}{" "}
             {store.meals.length > 0 && (
               <span className="count">{store.meals.length}</span>
             )}
@@ -527,7 +491,7 @@ export default function App() {
         </nav>
         <div className="header-right">
           <span className="campus-label">
-            <span className="live-dot" /> 清华宇宙
+            <span className="live-dot" /> {COPY.brand.campus}
           </span>
           <button
             className="icon-button"
@@ -550,47 +514,45 @@ export default function App() {
             <section className="page-heading">
               <div>
                 <div className="eyebrow">
-                  <span className="little-line" /> A LITTLE HUNGRY, A LITTLE
-                  CURIOUS
+                  <span className="little-line" /> {COPY.home.eyebrow}
                 </div>
                 <h1>
-                  宇宙很大，<span>先好好吃饭。</span>
+                  {COPY.home.title}
+                  <span>{COPY.home.titleAccent}</span>
                 </h1>
-                <p>让引力和一点随机，带你找到今天的那颗星。</p>
+                <p>{COPY.home.subtitle}</p>
               </div>
               <button
                 className="text-button atlas-link"
                 onClick={() => setPanel("atlas")}
               >
-                <Orbit size={18} /> 食堂星体图鉴 <ArrowRight size={16} />
+                <Orbit size={18} /> {COPY.nav.atlas} <ArrowRight size={16} />
               </button>
             </section>
             <div className="home-grid">
               <section
-                className={`space-card ${busy ? "traveling" : ""} ${celebrate ? "celebrating" : ""}`}
+                className={`space-card local-space ${openCount ? "inside-arm" : "between-arms"} ${busy ? "traveling" : ""} ${celebrate ? "celebrating" : ""}`}
+                data-region={openCount ? "arm" : "interarm"}
                 aria-label="食堂星系"
               >
-                {VIDEO_URL && !videoError ? (
-                  <video
-                    ref={videoRef}
-                    className="galaxy-video"
-                    src={VIDEO_URL}
-                    poster={asset("galaxy-keyframe.png")}
-                    autoPlay={!paused}
-                    muted
-                    loop
-                    playsInline
-                    onError={() => setVideoError(true)}
-                  />
-                ) : (
-                  <Galaxy paused={paused} />
-                )}
+                <Galaxy
+                  paused={paused}
+                  inArm={openCount > 0}
+                  time={conditions.time}
+                  activeCanteenId={activeStar?.id ?? null}
+                  celebrating={!!celebrate}
+                  onInspect={setDetail}
+                />
                 <div className="space-vignette" />
                 <div className="space-topline">
                   <div>
-                    <span className="live-dot" /> 清华 · 觅食星系
-                    <small>BARRED SPIRAL GALAXY / 001</small>
+                    <span className="live-dot" /> {COPY.scene.name}
+                    <small>{COPY.scene.coordinates}</small>
                   </div>
+                  <span className="region-badge" aria-live="polite">
+                    <i />
+                    {openCount ? COPY.scene.inArm : COPY.scene.betweenArms}
+                  </span>
                   <button
                     className="icon-button"
                     onClick={() => setPaused(!paused)}
@@ -599,53 +561,34 @@ export default function App() {
                     {paused ? <Play size={16} /> : <Pause size={16} />}
                   </button>
                 </div>
-                <div className="orbit-guide orbit-one" />
-                <div className="orbit-guide orbit-two" />
-                {canteens.map((c) => (
-                  <button
-                    key={c.id}
-                    className={`star-node ${activeStar?.id === c.id ? "target" : ""} ${!isOpen(c, conditions.time) ? "closed" : ""} ${celebrate === c.id ? "consumed" : ""}`}
-                    style={{
-                      left: `${c.position[0]}%`,
-                      top: `${c.position[1]}%`,
-                    }}
-                    aria-label={`查看${c.name}，${c.star}`}
-                    onClick={() => setDetail(c)}
-                  >
-                    <StarBody canteen={c} />
-                    <span className="star-label">
-                      {c.name}
-                      <small>{c.star}</small>
+                <div className={`mascot ${celebrate ? "happy" : ""}`}>
+                  {(celebrate || busy || result) && (
+                    <span className="mascot-bubble">
+                      {celebrate
+                        ? COPY.scene.satisfied
+                        : busy
+                          ? COPY.scene.approaching
+                          : result
+                            ? COPY.scene.arrived
+                            : COPY.scene.thinking}
                     </span>
-                  </button>
-                ))}
-                <div
-                  className={`mascot ${celebrate ? "happy" : ""}`}
-                  style={mascotStyle}
-                >
-                  <span className="mascot-bubble">
-                    {celebrate
-                      ? "嗝，星光味的！"
-                      : busy
-                        ? "闻到星星的香气了…"
-                        : result
-                          ? "就停在这里一会儿"
-                          : "今天，吃哪颗呢？"}
-                  </span>
+                  )}
                   <img
                     src={asset("little-black-hole.png")}
-                    alt="小吞：带着发光吸积盘的可爱小黑洞"
+                    alt={COPY.scene.mascotAlt}
                   />
                   <span className="mascot-label">
-                    <span /> YOU · 小吞
+                    <span /> {COPY.scene.mascotLabel}
                   </span>
                 </div>
                 {!result && (
                   <div className="space-caption">
                     <span>✧</span>
                     <p>
-                      每颗星，都是一顿饭的可能。
-                      <small>点亮一颗恒星，认识它的食堂故事</small>
+                      {openCount
+                        ? COPY.scene.armCaption
+                        : COPY.scene.gapCaption}
+                      <small>{COPY.scene.help}</small>
                     </p>
                   </div>
                 )}
@@ -654,10 +597,10 @@ export default function App() {
                     <div className="result-heading">
                       <span className="eyebrow">
                         {resultRecorded
-                          ? "这一餐，已收入星河"
+                          ? COPY.result.recorded
                           : result.accepted
-                            ? "目的地已选定"
-                            : "这次，宇宙想带你去"}
+                            ? COPY.result.accepted
+                            : COPY.result.found}
                       </span>
                       <button
                         className="icon-button"
@@ -683,7 +626,7 @@ export default function App() {
                       <div className="result-actions">
                         {!resultRecorded && !result.accepted && (
                           <button className="soft-button" onClick={accept}>
-                            <Check size={15} /> 就去这里
+                            <Check size={15} /> {COPY.result.accept}
                           </button>
                         )}
                         <button
@@ -694,7 +637,9 @@ export default function App() {
                               : setMealDialog({ recommendation: result })
                           }
                         >
-                          {resultRecorded ? "查看日志" : "饭后记录"}
+                          {resultRecorded
+                            ? COPY.result.journal
+                            : COPY.result.record}
                           <ArrowRight size={15} />
                         </button>
                       </div>
@@ -704,7 +649,7 @@ export default function App() {
                       aria-expanded={showProbability}
                       onClick={() => setShowProbability(!showProbability)}
                     >
-                      为什么遇见它？
+                      {COPY.result.why}
                       <span>
                         {(
                           result.distribution.find(
@@ -747,7 +692,7 @@ export default function App() {
                     颗恒星在参考供餐时段内
                   </span>
                   <span>
-                    星图位置 ≠ 校园位置 <CircleHelp size={12} />
+                    {COPY.scene.viewLabel} <CircleHelp size={12} />
                   </span>
                 </div>
               </section>
@@ -757,39 +702,43 @@ export default function App() {
                     <LocateFixed size={21} />
                   </span>
                   <div>
-                    <h2>设定今天的引力</h2>
-                    <p>宇宙也想知道你的心情</p>
+                    <h2>{COPY.controls.title}</h2>
+                    <p>{COPY.controls.subtitle}</p>
                   </div>
                 </div>
                 <div className="field-pair">
                   <label>
-                    <Clock3 size={14} /> 准备几点吃
+                    <Clock3 size={14} /> {COPY.controls.time}
                     <input
-                      aria-label="准备几点吃"
+                      aria-label={COPY.controls.time}
                       type="time"
                       required
                       value={conditions.time}
-                      onChange={(e) =>
-                        setConditions({ ...conditions, time: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFollowClock(false);
+                        setConditions({ ...conditions, time: e.target.value });
+                      }}
                     />
                   </label>
                   <button
                     className="now-button"
-                    onClick={() =>
+                    aria-pressed={followClock}
+                    title="跟随当前时间；手动改时间可预览其他饭点"
+                    onClick={() => {
+                      setFollowClock(true);
                       setConditions({
                         ...conditions,
                         time: localDateTime().slice(11),
-                      })
-                    }
+                      });
+                    }}
                   >
-                    现在
+                    {COPY.controls.now}
                   </button>
                 </div>
                 <label className="field-label">
-                  <MapPin size={14} /> 从哪里出发
+                  <MapPin size={14} /> {COPY.controls.location}
                   <select
-                    aria-label="从哪里出发"
+                    aria-label={COPY.controls.location}
                     value={conditions.locationId}
                     onChange={(e) =>
                       setConditions({
@@ -814,7 +763,7 @@ export default function App() {
                   </select>
                 </label>
                 <fieldset className="mood-field">
-                  <legend>此刻的心情</legend>
+                  <legend>{COPY.controls.mood}</legend>
                   <div className="mood-grid">
                     {moods.map((m) => (
                       <button
@@ -833,7 +782,8 @@ export default function App() {
                 </fieldset>
                 <fieldset className="preference-field">
                   <legend>
-                    今天偏爱什么 <small>可多选</small>
+                    {COPY.controls.preferences}{" "}
+                    <small>{COPY.controls.multiple}</small>
                   </legend>
                   <div className="preference-chips">
                     {preferences.map((p) => (
@@ -865,24 +815,21 @@ export default function App() {
                   >
                     {busy ? (
                       <>
-                        <Orbit className="spin" size={19} /> 正在靠近你的恒星
+                        <Orbit className="spin" size={19} />{" "}
+                        {COPY.controls.drawing}
                       </>
                     ) : result ? (
                       <>
-                        <RefreshCw size={17} /> 再漂一次
+                        <RefreshCw size={17} /> {COPY.controls.redraw}
                       </>
                     ) : (
                       <>
-                        <Sparkles size={19} /> 今天吞哪颗星？
+                        <Sparkles size={19} /> {COPY.controls.draw}
                         <ArrowRight size={18} />
                       </>
                     )}
                   </button>
-                  <p>
-                    {!openCount
-                      ? "这个时间没有候选，试试 07:30、12:00 或 18:00。"
-                      : "不是最优解，也可以是美好的一餐。"}
-                  </p>
+                  <p>{!openCount ? COPY.controls.empty : COPY.controls.hint}</p>
                 </div>
               </aside>
             </div>
@@ -948,18 +895,19 @@ export default function App() {
             <section className="page-heading">
               <div>
                 <div className="eyebrow">
-                  <span className="little-line" /> A PERSONAL CONSTELLATION
+                  <span className="little-line" /> {COPY.journal.eyebrow}
                 </div>
                 <h1>
-                  把每一顿饭，<span>写成星河。</span>
+                  {COPY.journal.title}
+                  <span>{COPY.journal.titleAccent}</span>
                 </h1>
-                <p>去过的地方、喜欢的味道，都是下一次漂泊的引力。</p>
+                <p>{COPY.journal.subtitle}</p>
               </div>
               <button
                 className="primary compact"
                 onClick={() => setMealDialog({})}
               >
-                <Plus size={17} /> 记一餐
+                <Plus size={17} /> {COPY.journal.add}
               </button>
             </section>
             <section className="journal-stats">
@@ -1200,13 +1148,13 @@ export default function App() {
         )}
         <footer className="site-footer">
           <span>
-            <Orbit size={13} /> 一只小黑洞的清华觅食日常
+            <Orbit size={13} /> {COPY.footer.signature}
           </span>
           <span>
             记录留在本机 <i /> 美味留在心里
           </span>
           <button onClick={() => setPanel("settings")}>
-            关于这片宇宙 <ArrowRight size={12} />
+            {COPY.footer.about} <ArrowRight size={12} />
           </button>
         </footer>
       </main>
@@ -1386,15 +1334,13 @@ export default function App() {
                 alt="小吞漂浮在棒旋星系中的视频关键帧"
               />
               <small>
-                已完成 IP 原图与背景编辑；这张图将作为后续循环视频的视觉参考。
+                这是第一版的星系全景参考图。当前首页按局部俯视漂泊设计，后续转场需重新准备一致视角的首尾帧。
               </small>
             </div>
             <div className="detail-block">
               <h4>动画与视频</h4>
               <p>
-                {VIDEO_URL && !videoError
-                  ? "首页已接入循环视频。"
-                  : "初稿使用程序绘制的动态棒旋星系，尚未调用视频生成模型。"}
+                {COPY.scene.videoNote}
                 支持暂停动画；系统减少动态效果偏好会默认暂停。
               </p>
               <button

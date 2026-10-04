@@ -31,7 +31,7 @@ try {
   await page.getByRole("button", { name: "口味重些", exact: true }).click();
   await at(7);
   await page
-    .getByRole("button", { name: "今天吞哪颗星？", exact: true })
+    .getByRole("button", { name: "吃什么？", exact: true })
     .click();
   await at(11);
   await page.getByRole("button", { name: "就去这里" }).click();

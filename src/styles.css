@@ -2343,3 +2343,229 @@ main {
   color: #d5ef9c !important;
   font-size: 11px !important;
 }
+
+/* Local flight view: the camera follows 小吞, the world drifts behind it. */
+.local-space {
+  background: #080c17;
+}
+.local-space .space-vignette {
+  background: linear-gradient(
+    180deg,
+    #080c1760,
+    transparent 18%,
+    transparent 79%,
+    #080c17b0
+  );
+}
+.local-space .space-topline {
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+.local-space .space-topline button {
+  pointer-events: auto;
+}
+.region-badge {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #c8b8e526;
+  border-radius: 20px;
+  padding: 7px 10px;
+  background: #13152499;
+  color: #b2a6c6;
+  font-size: 9px;
+  letter-spacing: 1px;
+  backdrop-filter: blur(8px);
+}
+.region-badge i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a1a6ba;
+}
+.inside-arm .region-badge {
+  color: #d7c5e9;
+  border-color: #d2b4f04a;
+}
+.inside-arm .region-badge i {
+  background: #e5c0ed;
+  box-shadow: 0 0 8px #deb5fa;
+}
+.local-space .mascot {
+  left: 50%;
+  top: 48%;
+  width: 100px;
+  height: 100px;
+  transition: none;
+}
+.local-space .mascot img {
+  animation: local-float 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px #bf98dc22);
+}
+.local-space .mascot-label {
+  font-size: 7px;
+  letter-spacing: 1.7px;
+  white-space: nowrap;
+  transform: translateY(-12px);
+  color: #afa4bb;
+}
+.local-space .mascot-bubble {
+  position: absolute;
+  bottom: 100%;
+  transform: translateY(12px);
+  font-size: 9px;
+  padding: 6px 9px;
+}
+.local-space .mascot.happy img {
+  animation: happy 1s ease-in-out infinite;
+}
+.local-space .star-node {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.3s;
+}
+.local-space .star-node:hover {
+  background: transparent;
+  z-index: 4;
+}
+.local-space .star-node .star-body {
+  --star-size: 14px !important;
+  transform: scale(var(--approach-scale, 1));
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--star-color) 30%, transparent),
+    0 0 34px color-mix(in srgb, var(--star-color) 10%, transparent);
+}
+.local-space .star-node .giant {
+  --star-size: 22px !important;
+}
+.local-space .star-node .dwarf {
+  --star-size: 7px !important;
+}
+.local-space .star-node .red {
+  --star-size: 11px !important;
+}
+.local-space .star-node .variable {
+  --star-size: 17px !important;
+}
+.local-space .star-node .orange {
+  --star-size: 12px !important;
+}
+.local-space .star-node .companion {
+  width: 4px;
+  height: 4px;
+  right: -8px;
+  top: 1px;
+}
+.local-space .star-node .companion-1 {
+  left: -9px;
+  top: 75%;
+  width: 3px;
+  height: 3px;
+}
+.local-space .star-node .companion-2 {
+  right: -7px;
+  top: 110%;
+  width: 2px;
+  height: 2px;
+}
+.local-space .star-node .multiple:before {
+  inset: -8px -12px;
+}
+.local-space .star-node.closed .star-body {
+  opacity: 0.8;
+}
+.local-space .star-node .star-label {
+  position: absolute;
+  top: 37px;
+  left: 50%;
+  transform: translate(-50%, 4px);
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid #d1bbe623;
+  background: #101320dc;
+  backdrop-filter: blur(8px);
+  border-radius: 7px;
+  opacity: 0;
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+  pointer-events: none;
+  font-size: 10px;
+}
+.local-space .star-node:hover .star-label,
+.local-space .star-node:focus .star-label,
+.local-space .star-node.target .star-label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.local-space .star-node.target .star-body:after {
+  inset: -10px;
+}
+.local-space .star-node.target {
+  z-index: 4;
+}
+.local-space .star-node.consumed .star-body {
+  animation: local-swallow 2s ease-in-out;
+}
+.local-space .space-caption {
+  bottom: 67px;
+  max-width: 80%;
+  opacity: 0.85;
+}
+@keyframes local-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+}
+@keyframes local-swallow {
+  0% {
+    opacity: 1;
+    transform: scale(1.55);
+  }
+  70% {
+    opacity: 0;
+    transform: translate(-55px, 10px) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.55);
+  }
+}
+@media (max-width: 560px) {
+  .local-space .mascot {
+    width: 80px;
+    height: 80px;
+  }
+  .local-space .mascot-label {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .local-space .mascot-bubble {
+    font-size: 8px;
+  }
+  .local-space .space-topline {
+    gap: 6px;
+  }
+  .region-badge {
+    font-size: 8px;
+    letter-spacing: 0;
+    padding: 6px 8px;
+  }
+  .local-space .space-caption p {
+    font-size: 9px;
+    line-height: 1.8;
+  }
+  .local-space .star-node .star-label {
+    font-size: 9px;
+  }
+}

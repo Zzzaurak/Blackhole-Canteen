@@ -6,9 +6,7 @@ test("recommend, record a different meal, refresh, edit and delete", async ({
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await page.getByLabel("准备几点吃", { exact: true }).fill("21:00");
-  await page
-    .getByRole("button", { name: "今天吞哪颗星？", exact: true })
-    .click();
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
   await expect(page.locator(".result-card")).toContainText("桃李园");
   await page.getByRole("button", { name: "就去这里" }).click();
   await page.getByRole("button", { name: "饭后记录", exact: true }).click();
@@ -47,7 +45,7 @@ test("empty candidate state, atlas, mobile layout and paused animations", async 
   ).toBeVisible();
   await page.getByLabel("准备几点吃", { exact: true }).fill("15:00");
   await expect(
-    page.getByRole("button", { name: "今天吞哪颗星？", exact: true }),
+    page.getByRole("button", { name: "吃什么？", exact: true }),
   ).toBeDisabled();
   await expect(page.locator(".launch-area")).toContainText("这个时间没有候选");
   await page.getByRole("button", { name: "食堂星体图鉴" }).click();
@@ -94,13 +92,11 @@ test("backup download, invalid import and confirmed restore", async ({
   await page.getByRole("button", { name: "导出备份" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^stellar-bites-/);
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "bad.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"version":2}'),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"version":2}'),
+  });
   await expect(page.getByRole("dialog")).toContainText(
     "备份格式或版本不受支持",
   );
@@ -119,13 +115,11 @@ test("backup download, invalid import and confirmed restore", async ({
       },
     ],
   };
-  await page
-    .locator("input[type=file]")
-    .setInputFiles({
-      name: "good.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(backup)),
-    });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "good.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
   await expect(page.locator(".import-confirm")).toContainText("导入 1 条用餐");
   expect(
     await page.evaluate(() => localStorage.getItem("stellar-bites:v1")),
@@ -147,7 +141,7 @@ test("a rapid second click does not create another draw; history survives reload
   await page.goto("/");
   await page.getByLabel("准备几点吃", { exact: true }).fill("12:00");
   await page
-    .getByRole("button", { name: "今天吞哪颗星？", exact: true })
+    .getByRole("button", { name: "吃什么？", exact: true })
     .evaluate((button: HTMLButtonElement) => {
       button.click();
       button.click();
@@ -167,4 +161,85 @@ test("a rapid second click does not create another draw; history survives reload
   await page.locator(".recommendation-history summary").click();
   await expect(page.locator(".history-row")).toHaveCount(1);
   await expect(page.locator(".history-status")).toHaveText("尚未记录用餐");
+});
+
+test("local flight pauses without jumping and time changes the arm environment", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("12:00");
+  await expect(page.locator(".space-card")).toHaveAttribute(
+    "data-region",
+    "arm",
+  );
+  const star = page.getByRole("button", {
+    name: "查看紫荆园，G 型主序星",
+    exact: true,
+  });
+  const initial = await star.evaluate((el) => parseFloat(el.style.top));
+  await expect
+    .poll(() => star.evaluate((el) => parseFloat(el.style.top)))
+    .toBeGreaterThan(initial + 0.6);
+  await page.getByRole("button", { name: "暂停星系动画" }).click();
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  const paused = await star.evaluate((el) => parseFloat(el.style.top));
+  await page.waitForTimeout(300);
+  expect(await star.evaluate((el) => parseFloat(el.style.top))).toBe(paused);
+  const arm = await page
+    .locator("canvas")
+    .evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await page.getByLabel("准备几点吃", { exact: true }).fill("15:00");
+  await expect(page.locator(".region-badge")).toHaveText("旋臂之间");
+  await expect(page.locator(".space-card")).toHaveAttribute(
+    "data-region",
+    "interarm",
+  );
+  await expect
+    .poll(() =>
+      page.locator("canvas").evaluate((c: HTMLCanvasElement) => c.toDataURL()),
+    )
+    .not.toBe(arm);
+  await page.getByRole("button", { name: "播放星系动画" }).click();
+  await expect
+    .poll(() => star.evaluate((el) => parseFloat(el.style.top)))
+    .toBeGreaterThan(paused + 0.6);
+  await star.focus();
+  await expect(star.locator(".star-label")).toHaveCSS("opacity", "1");
+});
+
+test("live clock crosses into lunch, manual preview remains fixed", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-10-05T02:59:50Z") });
+  await page.goto("/");
+  await expect(page.getByLabel("准备几点吃", { exact: true })).toHaveValue(
+    "10:59",
+  );
+  await expect(page.locator(".space-card")).toHaveAttribute(
+    "data-region",
+    "interarm",
+  );
+  await page.clock.fastForward(15000);
+  await expect(page.getByLabel("准备几点吃", { exact: true })).toHaveValue(
+    "11:00",
+  );
+  await expect(page.locator(".space-card")).toHaveAttribute(
+    "data-region",
+    "arm",
+  );
+  await page.getByLabel("准备几点吃", { exact: true }).fill("15:00");
+  await page.clock.fastForward(60000);
+  await expect(page.getByLabel("准备几点吃", { exact: true })).toHaveValue(
+    "15:00",
+  );
+  await page.getByRole("button", { name: "现在", exact: true }).click();
+  await expect(page.getByLabel("准备几点吃", { exact: true })).toHaveValue(
+    "11:01",
+  );
 });
