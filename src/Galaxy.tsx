@@ -3,7 +3,6 @@ import { canteens } from "./data";
 import { isOpen } from "./engine";
 import type { Canteen } from "./types";
 import StarBody from "./StarBody";
-import { getArmTexture } from "./galaxyTexture";
 
 interface Props {
   paused: boolean;
@@ -54,7 +53,7 @@ export default function Galaxy(props: Props) {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    const stars = Array.from({ length: 1100 }, (_, i) => ({
+    const stars = Array.from({ length: 820 }, (_, i) => ({
       x: random(),
       y: random(),
       size: random(),
@@ -65,9 +64,24 @@ export default function Galaxy(props: Props) {
     }));
     const nodes = anchors.map(() => ({ travel: 0, focus: 0 }));
     // Cloud textures and stellar halos are pre-rendered once, not rebuilt every frame.
-    const nebula = getArmTexture();
-    const armLayer = document.createElement("canvas");
-    const cloud = armLayer.getContext("2d")!;
+    const nebula = document.createElement("canvas");
+    nebula.width = 1200;
+    nebula.height = 900;
+    const cloud = nebula.getContext("2d")!;
+    for (let i = 0; i < 100; i++) {
+      const x = random() * 1500 - 150,
+        y = 760 - x * 0.5 + (random() - 0.5) * 160;
+      const radius = 60 + random() * 180;
+      const color = ["107,90,172", "74,109,154", "163,99,164", "187,150,111"][
+        i % 4
+      ];
+      const gradient = cloud.createRadialGradient(x, y, 0, x, y, radius);
+      gradient.addColorStop(0, `rgba(${color},${0.035 + random() * 0.07})`);
+      gradient.addColorStop(0.5, `rgba(${color},.025)`);
+      gradient.addColorStop(1, `rgba(${color},0)`);
+      cloud.fillStyle = gradient;
+      cloud.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
     const sprites = canteens.map((c) => {
       const sprite = document.createElement("canvas");
       sprite.width = sprite.height = 80;
@@ -94,39 +108,17 @@ export default function Galaxy(props: Props) {
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#080c17";
       ctx.fillRect(0, 0, width, height);
-      // One large, seamless patch surrounds the camera. Its edge is outside the
-      // viewport while inside the arm; only entry / exit reveals a wide boundary.
-      const tileSize = Math.max(width, height) * 1.35;
-      const offsetX = wrap(-seconds * 1.25, tileSize) - tileSize;
-      const offsetY = wrap(seconds * 2.8, tileSize) - tileSize;
-      cloud.clearRect(0, 0, width, height);
-      for (let x = offsetX; x < width; x += tileSize) {
-        for (let y = offsetY; y < height; y += tileSize) {
-          cloud.drawImage(nebula, x, y, tileSize, tileSize);
-        }
-      }
-      // A trace of the distant field remains visible between arms.
-      ctx.globalAlpha = 0.055;
-      ctx.drawImage(armLayer, 0, 0, width, height);
-      ctx.globalAlpha = 1;
-      if (arm > 0.001) {
-        if (arm < 0.999) {
-          const boundary = 1.25 - arm * 2;
-          const mask = cloud.createLinearGradient(
-            width * boundary, height * boundary,
-            width * (boundary + 0.7), height * (boundary + 0.7),
-          );
-          mask.addColorStop(0, "#ffffff00");
-          mask.addColorStop(0.25, "#ffffff28");
-          mask.addColorStop(0.75, "#ffffffd7");
-          mask.addColorStop(1, "#ffffff");
-          cloud.globalCompositeOperation = "destination-in";
-          cloud.fillStyle = mask;
-          cloud.fillRect(0, 0, width, height);
-          cloud.globalCompositeOperation = "source-over";
-        }
-        ctx.drawImage(armLayer, 0, 0, width, height);
-      }
+      ctx.save();
+      ctx.globalAlpha = 0.25 + arm * 0.85;
+      // At mealtimes the arm surrounds us. Between meals its distant edge lies beyond the view.
+      ctx.drawImage(
+        nebula,
+        -width * 0.15 + Math.sin(seconds * 0.015) * width * 0.025,
+        -height * 0.08 - (1 - arm) * height * 0.92,
+        width * 1.3,
+        height * 1.18,
+      );
+      ctx.restore();
       for (const star of stars) {
         const speed = 1.5 + star.depth * 5;
         const x =
@@ -137,9 +129,11 @@ export default function Galaxy(props: Props) {
           0,
           Math.min(1, x / 30, (width - x) / 30, y / 30, (height - y) / 30),
         );
-        const projection = (x * width + y * height) / (width * width + height * height);
-        const coverage = Math.max(0, Math.min(1, (projection - (1.25 - arm * 2)) / 0.7));
-        const opacity = edge * (star.inCloud ? coverage * 0.62 : 0.5 + star.depth * 0.35);
+        const band = Math.exp(
+          -Math.pow((y / height - (0.84 - (0.54 * x) / width)) / 0.24, 2),
+        );
+        const opacity =
+          edge * (star.inCloud ? arm * band * 0.68 : 0.5 + star.depth * 0.35);
         if (opacity < 0.015) continue;
         ctx.globalAlpha =
           opacity * (0.8 + 0.2 * Math.sin(seconds * 0.6 + star.phase));
@@ -234,9 +228,6 @@ export default function Galaxy(props: Props) {
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      armLayer.width = Math.ceil(width * dpr);
-      armLayer.height = Math.ceil(height * dpr);
-      cloud.setTransform(dpr, 0, 0, dpr, 0, 0);
       resume();
     });
     observer.observe(canvas);

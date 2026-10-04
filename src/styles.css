@@ -2516,14 +2516,7 @@ main {
 .local-space .space-caption {
   bottom: 67px;
   max-width: 80%;
-  opacity: 1;
-  text-shadow: 0 2px 8px #000, 0 0 20px #080c17;
-}
-.local-space .space-caption p {
-  color: #dad7e3;
-}
-.local-space .space-topline {
-  text-shadow: 0 2px 8px #080c17;
+  opacity: 0.85;
 }
 @keyframes local-float {
   0%,

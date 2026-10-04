@@ -4,7 +4,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 root = Path(__file__).resolve().parent.parent
 root_files = [
-    "AGENTS.md", "README.md", "require.md", "package.json", "package-lock.json", "index.html",
+    "README.md", "require.md", "package.json", "package-lock.json", "index.html",
     "tsconfig.json", "vite.config.ts", "vitest.config.ts", "playwright.config.ts",
     ".gitignore", ".env.example",
 ]
