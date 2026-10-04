@@ -1,0 +1,18 @@
+{
+  "model": "hy-video-v1.5",
+  "status": "succeeded",
+  "duration": 5,
+  "resolution": "720p",
+  "estimated_yuan": 1.5,
+  "price_source": "https://cloud.tencent.cn/document/product/1823/130055",
+  "task_id": "1301413966-WandVideo-efafb1977d314841927805b9df5c7cb6",
+  "request_id": "9087636c-3791-4465-a14c-06ff89fdfdbf",
+  "created": 1791147502,
+  "tokenhub_usage": {
+    "total_tokens": 150000
+  },
+  "file": "docs/media/departure-original.mp4",
+  "processed_file": "public/assets/departure-v1.mp4",
+  "cost_yuan_at_public_rate": 1.5,
+  "postprocess": "Crop generated gibberish text from lower edge; resize to 1280x720, H.264 faststart. Reverse locally for return."
+}

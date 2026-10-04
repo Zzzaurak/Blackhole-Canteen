@@ -41,6 +41,7 @@ import type { Canteen, Conditions, Meal, Recommendation, Store } from "./types";
 import Galaxy from "./Galaxy";
 import StarBody from "./StarBody";
 import { COPY } from "./copy";
+import JourneyVideo from "./JourneyVideo";
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}assets/${path}`;
 const download = (content: string, name: string) => {
@@ -314,6 +315,8 @@ export default function App() {
   }, [followClock]);
   const [result, setResult] = useState<Recommendation | null>(null);
   const [busy, setBusy] = useState(false);
+  const [journey, setJourney] = useState<"depart" | "return" | null>(null);
+  const [arrived, setArrived] = useState(false);
   const busyRef = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [paused, setPaused] = useState(
@@ -397,14 +400,44 @@ export default function App() {
     setBusy(true);
     setResult(recommendation);
     setShowProbability(false);
-    timer.current = setTimeout(
-      () => {
+    setArrived(false);
+    if (!paused && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setJourney("depart");
+    } else {
+      timer.current = setTimeout(() => {
         busyRef.current = false;
         setBusy(false);
-      },
-      paused ? 150 : 2100,
-    );
+      }, 150);
+    }
   };
+  const finishJourney = (played: boolean) => {
+    setArrived(journey === "depart" && played);
+    if (journey === "return") setResult(null);
+    setJourney(null);
+    busyRef.current = false;
+    setBusy(false);
+  };
+  const closeResult = () => {
+    if (arrived && !paused && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      busyRef.current = true;
+      setBusy(true);
+      setJourney("return");
+    } else {
+      setResult(null);
+      setArrived(false);
+    }
+  };
+  useEffect(() => {
+    if (page !== "home" || (paused && journey)) {
+      clearTimeout(timer.current);
+      setJourney(null);
+      setArrived(false);
+      if (journey === "return") setResult(null);
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }, [page, paused, journey]);
+
   const accept = () => {
     if (!result) return;
     const next = { ...result, accepted: true };
@@ -531,23 +564,25 @@ export default function App() {
             </section>
             <div className="home-grid">
               <section
-                className={`space-card local-space ${openCount ? "inside-arm" : "between-arms"} ${busy ? "traveling" : ""} ${celebrate ? "celebrating" : ""}`}
+                className={`space-card local-space ${openCount ? "inside-arm" : "between-arms"} ${busy ? "traveling" : ""} ${arrived ? "cinematic-arrival" : ""} ${journey ? "cinematic-playing" : ""} ${celebrate ? "celebrating" : ""}`}
                 data-region={openCount ? "arm" : "interarm"}
                 aria-label="食堂星系"
               >
                 <Galaxy
-                  paused={paused}
+                  paused={paused || !!journey || arrived}
                   inArm={openCount > 0}
                   time={conditions.time}
                   activeCanteenId={activeStar?.id ?? null}
                   celebrating={!!celebrate}
                   onInspect={setDetail}
                 />
+                {arrived && <img className="arrival-backdrop" src={asset("arrival-v1.jpg")} alt="小吞抵达恒星旁" />}
+                {journey && <JourneyVideo key={journey} direction={journey} onComplete={finishJourney} />}
                 <div className="space-vignette" />
                 <div className="space-topline">
                   <div>
                     <span className="live-dot" /> {COPY.scene.name}
-                    <small>{COPY.scene.coordinates}</small>
+                    <small>{arrived ? COPY.scene.arrivalCoordinates : COPY.scene.coordinates}</small>
                   </div>
                   <span className="region-badge" aria-live="polite">
                     <i />
@@ -605,7 +640,7 @@ export default function App() {
                       <button
                         className="icon-button"
                         aria-label="收起推荐结果"
-                        onClick={() => setResult(null)}
+                        onClick={closeResult}
                       >
                         <X size={15} />
                       </button>
@@ -692,7 +727,7 @@ export default function App() {
                     颗恒星在参考供餐时段内
                   </span>
                   <span>
-                    {COPY.scene.viewLabel} <CircleHelp size={12} />
+                    {arrived ? COPY.scene.arrivalViewLabel : COPY.scene.viewLabel} <CircleHelp size={12} />
                   </span>
                 </div>
               </section>
@@ -1150,6 +1185,8 @@ export default function App() {
                                 busyRef.current = false;
                                 setBusy(false);
                                 setResult(null);
+                                setJourney(null);
+                                setArrived(false);
                               }
                               notify("推荐记录已删除，用餐记录已保留。");
                             }
@@ -1284,6 +1321,8 @@ export default function App() {
                       busyRef.current = false;
                       setBusy(false);
                       setResult(null);
+                      setJourney(null);
+                      setArrived(false);
                       setMealDialog(null);
                       setCelebrate(null);
                       notify("所有用餐和推荐记录已清空。");
@@ -1329,6 +1368,11 @@ export default function App() {
                             locationId: pendingImport.locationId,
                             preferences: pendingImport.preferences,
                           });
+                          clearTimeout(timer.current);
+                          busyRef.current = false;
+                          setBusy(false);
+                          setJourney(null);
+                          setArrived(false);
                           setResult(null);
                           setPendingImport(null);
                           notify("备份已恢复。");
@@ -1351,7 +1395,7 @@ export default function App() {
               <h4>数据来源与边界</h4>
               <p>
                 早餐 06:30—09:00，午餐 11:00—13:00，晚餐
-                17:00—19:00；桃李晚餐与一层夜宵延续至 23:00。具体窗口可能不同。
+                17:00—19:00；桃李延续至 23:00，玉树延续至 22:00。具体窗口可能不同。
               </p>
               <p>
                 坐标来自 2025 年 12

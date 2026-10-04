@@ -11,6 +11,8 @@ export const COPY = {
   scene: {
     name: "清华 · 漂泊星海",
     coordinates: "LOCAL SECTOR / TOP-DOWN VIEW",
+    arrivalCoordinates: "NEAR STAR / ARRIVAL VIEW",
+    arrivalViewLabel: "近星视角 · 暂时停泊",
     inArm: "旋臂之中",
     betweenArms: "旋臂之间",
     armCaption: "饭点到了，漂进一片温柔的星光。",
@@ -24,7 +26,7 @@ export const COPY = {
     arrived: "就停在这里一会儿",
     satisfied: "嗝，星光味的！",
     videoNote:
-      "首页是纯前端绘制的局部星海：小吞跟随镜头，星海向后流动。饭点进入旋臂辉光，非饭点漂入臂间。俯视转斜平视、放大靠近目标及反向返回的视频尚未制作。",
+      "首页是纯前端绘制的局部星海：小吞跟随镜头，星海向后流动。饭点进入旋臂辉光，非饭点漂入臂间。点击“吃什么？”播放腾讯云生成的首版转场，收起结果时反向返回。当前所有食堂共用一段镜头，实际推荐以结果卡片为准；暂停或减少动态效果时直接显示结果。",
   },
   controls: {
     title: "设定今天的引力",

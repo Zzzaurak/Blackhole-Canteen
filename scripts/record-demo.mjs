@@ -24,7 +24,7 @@ try {
     if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
   };
   await at(3);
-  await page.getByLabel("准备几点吃", { exact: true }).fill("21:00");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
   await at(4.5);
   await page.getByRole("button", { name: "不想走远", exact: false }).click();
   await at(6);

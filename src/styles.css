@@ -2573,3 +2573,49 @@ main {
     font-size: 9px;
   }
 }
+
+/* The generated movie only covers the local scene during a journey. */
+.journey-overlay,
+.arrival-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 5;
+}
+.journey-overlay {
+  z-index: 12;
+  background: #080c17;
+}
+.journey-overlay video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .35s;
+}
+.journey-overlay.ready video { opacity: 1; }
+.journey-skip {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  background: #10131fe6;
+  z-index: 1;
+}
+.cinematic-arrival .galaxy-canvas,
+.cinematic-arrival .drifting-star,
+.cinematic-arrival .mascot { visibility: hidden; }
+.cinematic-arrival .space-topline,
+.cinematic-arrival .space-bottomline,
+.cinematic-arrival .result-card { z-index: 7; }
+.history-row { flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .journey-overlay video,
+  .arrival-backdrop {
+    object-fit: contain;
+    object-position: center 28%;
+    background: #080c17;
+  }
+}

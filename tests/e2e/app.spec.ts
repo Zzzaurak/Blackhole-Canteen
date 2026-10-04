@@ -287,3 +287,36 @@ test("every recommendation can be deleted, linked meals survive, and all records
   expect(saved.recommendations).toEqual([]);
   expect(saved.locationId).toBe("zijing-dorm");
 });
+
+test("generated departure and return play once without changing the recommendation", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
+  const video = page.getByLabel("前往恒星的转场视频");
+  await expect(video).toBeVisible();
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(0);
+  await expect(page.locator(".result-card")).toContainText("桃李园", { timeout: 15000 });
+  await expect(page.locator(".arrival-backdrop")).toBeVisible();
+  await page.getByRole("button", { name: "收起推荐结果" }).click();
+  await expect(page.getByLabel("返回星海的转场视频")).toBeVisible();
+  await expect(page.locator(".journey-overlay")).toHaveCount(0, { timeout: 15000 });
+  await expect(page.locator(".result-card")).toHaveCount(0);
+  const count = await page.evaluate(() => JSON.parse(localStorage.getItem("stellar-bites:v1")!).recommendations.length);
+  expect(count).toBe(1);
+});
+
+test("failed video and skipped video both leave a usable result", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.route("**/assets/departure-v1.mp4", route => route.abort());
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
+  await expect(page.locator(".result-card")).toContainText("桃李园");
+  await expect(page.locator(".journey-overlay")).toHaveCount(0);
+  await page.unroute("**/assets/departure-v1.mp4");
+  await page.getByRole("button", { name: "再漂一次", exact: true }).click();
+  await page.getByRole("button", { name: "跳过，查看推荐" }).click();
+  await expect(page.locator(".result-card")).toContainText("桃李园");
+  await expect(page.locator(".journey-overlay")).toHaveCount(0);
+});
