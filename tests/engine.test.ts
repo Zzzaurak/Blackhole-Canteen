@@ -37,11 +37,16 @@ describe("hours and reference data", () => {
   ])("handles the boundary %s", (time, expected) =>
     expect(isOpen(canteenById("zijing"), time)).toBe(expected),
   );
-  it("only Taoli is eligible for late dinner", () => {
+  it("only Taoli is eligible after Yushu closes", () => {
     expect(
       recommend({ ...base, time: "22:59" }, []).map((p) => p.canteenId),
     ).toEqual(["taoli"]);
     expect(recommend({ ...base, time: "23:00" }, [])).toEqual([]);
+  });
+  it("keeps Yushu open until 22:00, excluding closing time", () => {
+    expect(isOpen(canteenById("yushu"), "21:59")).toBe(true);
+    expect(isOpen(canteenById("yushu"), "22:00")).toBe(false);
+    expect(recommend({ ...base, time: "21:00" }, []).map(p => p.canteenId).sort()).toEqual(["taoli", "yushu"]);
   });
   it("has no fabricated prices for Tingtao and Zhilan", () => {
     expect(canteenById("tingtao").price).toBeNull();

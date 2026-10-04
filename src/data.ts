@@ -197,7 +197,7 @@ export const canteens: Canteen[] = [
     taste: 4.8,
     tags: ["好吃优先", "分量要足"],
     area: "紫荆 18 号楼与 19 号楼之间",
-    hours: regular,
+    hours: [["06:30", "09:00"], ["11:00", "13:00"], ["17:00", "22:00"]],
     companions: [],
   },
   {

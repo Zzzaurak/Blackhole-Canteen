@@ -1095,12 +1095,10 @@ export default function App() {
                   漂泊记录 <span>{store.recommendations.length} 次相遇</span>
                 </summary>
                 <p>
-                  保留每次抽取的结果；重抽不会变成用餐记录。展示最近 20
-                  次，完整历史可导出备份。
+                  保留每次抽取的结果；重抽不会变成用餐记录。每条都可删除，删除推荐不会删除已经记录的用餐。
                 </p>
                 {[...store.recommendations]
                   .reverse()
-                  .slice(0, 20)
                   .map((r) => {
                     const recorded = store.meals.find(
                       (m) => m.recommendationId === r.id,
@@ -1131,6 +1129,32 @@ export default function App() {
                               ? "已选定，待记录"
                               : "尚未记录用餐"}
                         </span>
+                        <button
+                          className="icon-button"
+                          aria-label={`删除${canteenById(r.canteenId).name}推荐记录`}
+                          onClick={() => {
+                            if (!confirm("删除这条推荐记录？已记录的用餐会保留。")) return;
+                            const current = storeRef.current;
+                            const next = {
+                              ...current,
+                              recommendations: current.recommendations.filter((item) => item.id !== r.id),
+                              meals: current.meals.map((meal) => {
+                                if (meal.recommendationId !== r.id) return meal;
+                                const { recommendationId: _removed, ...rest } = meal;
+                                return rest;
+                              }),
+                            };
+                            if (commit(next)) {
+                              if (result?.id === r.id) {
+                                clearTimeout(timer.current);
+                                busyRef.current = false;
+                                setBusy(false);
+                                setResult(null);
+                              }
+                              notify("推荐记录已删除，用餐记录已保留。");
+                            }
+                          }}
+                        ><Trash2 size={14} /></button>
                         {!recorded && (
                           <button
                             className="text-button"
@@ -1250,6 +1274,22 @@ export default function App() {
                 >
                   <ArrowUpFromLine size={16} /> 导入备份
                 </button>
+                <button
+                  className="soft-button"
+                  disabled={!store.meals.length && !store.recommendations.length}
+                  onClick={() => {
+                    if (!confirm("清空所有用餐和推荐记录？此操作无法撤销，建议先导出备份。位置和偏好设置会保留。")) return;
+                    if (commit({ ...storeRef.current, meals: [], recommendations: [] })) {
+                      clearTimeout(timer.current);
+                      busyRef.current = false;
+                      setBusy(false);
+                      setResult(null);
+                      setMealDialog(null);
+                      setCelebrate(null);
+                      notify("所有用餐和推荐记录已清空。");
+                    }
+                  }}
+                ><Trash2 size={16} /> 清空所有记录</button>
                 <input
                   hidden
                   type="file"

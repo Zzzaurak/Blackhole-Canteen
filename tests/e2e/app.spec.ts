@@ -5,7 +5,7 @@ test("recommend, record a different meal, refresh, edit and delete", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByLabel("准备几点吃", { exact: true }).fill("21:00");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
   await page.getByRole("button", { name: "吃什么？", exact: true }).click();
   await expect(page.locator(".result-card")).toContainText("桃李园");
   await page.getByRole("button", { name: "就去这里" }).click();
@@ -242,4 +242,48 @@ test("live clock crosses into lunch, manual preview remains fixed", async ({
   await expect(page.getByLabel("准备几点吃", { exact: true })).toHaveValue(
     "11:01",
   );
+});
+
+test("every recommendation can be deleted, linked meals survive, and all records can be cleared", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
+  await expect(page.locator(".result-card")).toBeVisible();
+  await page.evaluate(() => {
+    const store = JSON.parse(localStorage.getItem("stellar-bites:v1")!);
+    const rec = store.recommendations[0];
+    store.recommendations = Array.from({ length: 26 }, (_, i) => ({ ...rec, id: `history-${i}` }));
+    store.meals = [{ id: "actual-meal", canteenId: "qingfen", recommendationId: "history-0", rating: 4, note: "保留这顿饭", eatenAt: "2026-10-05T12:00" }];
+    localStorage.setItem("stellar-bites:v1", JSON.stringify(store));
+  });
+  await page.reload();
+  await page.getByRole("navigation").getByRole("button", { name: /吞星日志/ }).click();
+  await page.locator(".recommendation-history summary").click();
+  await expect(page.locator(".history-row")).toHaveCount(26);
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error("unavailable"); }; });
+  page.once("dialog", d => d.accept());
+  await page.locator(".history-row").last().getByRole("button", { name: /删除.*推荐记录/ }).click();
+  await expect(page.locator(".history-row")).toHaveCount(26);
+  await expect(page.getByRole("alert")).toContainText("保存失败");
+  await page.reload();
+  await page.getByRole("navigation").getByRole("button", { name: /吞星日志/ }).click();
+  await page.locator(".recommendation-history summary").click();
+  page.once("dialog", d => d.accept());
+  await page.locator(".history-row").last().getByRole("button", { name: /删除.*推荐记录/ }).click();
+  await expect(page.locator(".history-row")).toHaveCount(25);
+  await expect(page.locator(".meal-card")).toContainText("保留这顿饭");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("stellar-bites:v1")!).meals[0].recommendationId)).toBeUndefined();
+  await page.reload();
+  await page.getByRole("button", { name: "关于这片宇宙", exact: true }).click();
+  page.once("dialog", d => d.dismiss());
+  await page.getByRole("button", { name: "清空所有记录" }).click();
+  await expect(page.getByRole("dialog")).toContainText("1 条用餐、25");
+  page.once("dialog", d => d.accept());
+  await page.getByRole("button", { name: "清空所有记录" }).click();
+  await expect(page.getByRole("dialog")).toContainText("0 条用餐、0");
+  await page.reload();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("stellar-bites:v1")!));
+  expect(saved.meals).toEqual([]);
+  expect(saved.recommendations).toEqual([]);
+  expect(saved.locationId).toBe("zijing-dorm");
 });
