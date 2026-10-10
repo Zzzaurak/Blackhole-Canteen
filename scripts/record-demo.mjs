@@ -1,10 +1,9 @@
 // Records the actual UI, not a generated video. Run after starting npm run dev.
 // One-time recorder dependency: npx playwright install ffmpeg
 import { chromium, expect } from "@playwright/test";
-import { mkdir, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 
-await mkdir("docs/previews", { recursive: true });
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({
   reducedMotion: "no-preference",
@@ -92,11 +91,11 @@ execFileSync(
     "-movflags",
     "+faststart",
     "-an",
-    "docs/previews/demo-current.mp4",
+    "demo-current.mp4",
   ],
   { stdio: "pipe" },
 );
 await rm(raw);
 console.log(
-  `Saved docs/previews/demo-current.mp4 (${duration.toFixed(2)}s, actual UI screen recording, no video generation).`,
+  `Saved demo-current.mp4 (${duration.toFixed(2)}s, actual UI screen recording, no video generation).`,
 );

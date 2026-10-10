@@ -5,4 +5,8 @@ playwright-report/
 *.tsbuildinfo
 .DS_Store
 .env*
-!.env.example
+*.zip
+
+# Local visual QA artifacts; the final walkthrough lives at the project root.
+docs/previews/
+docs/media/*-contact-sheet.*

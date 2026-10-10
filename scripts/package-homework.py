@@ -6,12 +6,13 @@ root = Path(__file__).resolve().parent.parent
 root_files = [
     "AGENTS.md", "README.md", "package.json", "package-lock.json", "index.html",
     "tsconfig.json", "vite.config.ts", "vitest.config.ts", "playwright.config.ts",
-    ".gitignore", ".env.example",
+    ".gitignore", "demo-current.mp4",
 ]
 files = [root / name for name in root_files]
 for directory in ["src", "public", "docs", "tests", "scripts"]:
     files.extend(p for p in (root / directory).rglob("*") if p.is_file()
-                 and p.name != ".DS_Store" and "__pycache__" not in p.parts)
+                 and p.name != ".DS_Store" and "__pycache__" not in p.parts
+                 and "previews" not in p.parts and "-contact-sheet." not in p.name)
 archive = root / "hw1-final.zip"
 with ZipFile(archive, "w", ZIP_DEFLATED) as bundle:
     for path in sorted(files):

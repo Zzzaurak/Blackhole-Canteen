@@ -73,14 +73,15 @@ npm run test:e2e    # 实际浏览器测试，需要已安装 Google Chrome
 | `src/JourneyVideo.tsx` | 转场播放、跳过与失败回退 |
 | `src/spiralField.ts` | 恒星 / 气体共享旋臂模型、弥散云气、局部镜头 |
 | `src/styles.css`        | 视觉、动画、响应式布局                                   |
-| `public/assets/`        | IP 原图、星系关键帧、正向 / 返回视频和抵达末帧                          |
+| `public/assets/`        | IP 原图、星系关键帧、正向 / 返回视频                          |
+| `demo-current.mp4` | 最终使用流程录屏（27.68 秒） |
 | `docs/design.md`        | 初稿产品方案、选星依据和推荐规则                         |
 | `docs/data-sources.md`  | 校园标点方法、来源和不确定性                             |
 | `docs/media-prompts.md` | 图像 / 视频提示词、生成任务、费用与处理过程                             |
 
 ## 作业提交检查
 
-最新使用流程见 [当前界面操作录屏](docs/previews/demo-current.mp4)（27.68 秒，约 1.22MB）：设置时间与偏好 → 完整转场 → 选定食堂 → 评分和记录 → 日志 → 刷新后记录仍保留。它是真实浏览器录屏，使用隔离浏览器的示例数据，不改变你的记录。
+最新使用流程见 [当前界面操作录屏](demo-current.mp4)（27.68 秒，约 1.22MB）：设置时间与偏好 → 完整转场 → 选定食堂 → 评分和记录 → 日志 → 刷新后记录仍保留。它是真实浏览器录屏，使用隔离浏览器的示例数据，不改变你的记录。
 
 在 `hw/hw1` 目录运行：
 
@@ -88,11 +89,11 @@ npm run test:e2e    # 实际浏览器测试，需要已安装 Google Chrome
 python3 scripts/package-homework.py
 ```
 
-生成的 **`hw1-final.zip`** 就是作业附件，内含完整源码、锁文件、图片、网页视频、最新操作录屏和说明。打包不需要先启动网站，也不需要安装前端依赖；运行脚本需要 Python 3。脚本排除 `node_modules/`、`dist/`、Git 历史及本地环境配置，并检查压缩包小于 100MB。解压后按本文开头的 `npm ci` / `npm run dev` 运行。
+生成的 **`hw1-final.zip`** 就是作业附件，内含完整源码、锁文件、图片、网页视频、最新操作录屏和说明。打包不需要先启动网站，也不需要安装前端依赖；运行脚本需要 Python 3。脚本排除 `node_modules/`、`dist/`、测试截图、Git 历史及本地环境配置，并检查压缩包小于 100MB。解压后按本文开头的 `npm ci` / `npm run dev` 运行。
 
-若之后修改了界面，需要重新录制演示：先在一个终端运行 `npm run dev`，再在本目录另一个终端运行 `node scripts/record-demo.mjs`。录制需 Google Chrome、系统 `ffmpeg` / `ffprobe` 和 Playwright 录制组件（首次运行 `npx playwright install ffmpeg`）。新录屏会覆盖 `docs/previews/demo-current.mp4`，完成后再执行打包命令。
+若之后修改了界面，需要重新录制演示：先在一个终端运行 `npm run dev`，再在本目录另一个终端运行 `node scripts/record-demo.mjs`。录制需 Google Chrome、系统 `ffmpeg` / `ffprobe` 和 Playwright 录制组件（首次运行 `npx playwright install ffmpeg`）。新录屏会覆盖 `demo-current.mp4`，完成后再执行打包命令。
 
-作业要求源代码和不超过 30 秒的使用流程录屏合计低于 100MB；压缩包已收集这些文件。
+作业要求源代码和不超过 30 秒的使用流程录屏合计低于 100MB；压缩包已收集这些文件。录屏位于项目根目录，ZIP 不纳入 Git。临时截图和接触表放在被忽略的 `test-results/` 中；旧测试图片和旧录屏已从当前版本清理，可从 Git 历史恢复。
 
 ## 修改保存约定
 

@@ -6,7 +6,7 @@
 - 输入：`media/departure-first-frame.png`，由当前真实前端隐藏界面文字后截图，保留小吞和局部星海。使用官方支持的 Base64 输入，不上传凭据或本地路径。
 - 完整提示词：`media/departure-prompt.txt`。目标是从局部俯视倾斜下降、推进至恒星旁；所有食堂先共用一段镜头，尚未逐个匹配恒星类型。
 - 原始输出：`media/departure-original.mp4`。原片底部产生无意义字符，保留原片供复核，在本地裁切掉底部区域并转为 1280×720 的 H.264 faststart 文件。小吞与星体仍有模型风格化变化，属于首版效果。
-- 网页素材：`../public/assets/departure-v1.mp4`（相对项目根目录为 `public/assets/departure-v1.mp4`）、`return-v1.mp4`、`arrival-v1.jpg`。返回片段由正向片段本地倒放，不另行生成、不追加模型费用。
+- 网页素材：`../public/assets/departure-v1.mp4`（相对项目根目录为 `public/assets/departure-v1.mp4`）、`return-v1.mp4`。返回片段由正向片段本地倒放，不另行生成、不追加模型费用。
 - 实际任务 ID、状态、返回用量：`media/video-task.json`。只记录无密钥元数据，不保存临时签名 URL。
 
 ## 本次费用
@@ -15,9 +15,9 @@
 
 ## 播放与复现
 
-`src/JourneyVideo.tsx` 播放生成文件。推荐算法先抽样、先保存；视频不影响选择结果。视频正常结束后，末帧用 700ms 淡出，露出实时恒星和小吞，再显示推荐卡片。未选定目的地时收起结果，播放倒放片段，结束后恒星淡回原位；选定目的地后保持实时近星画面，收起时直接淡出、在原位淡入，不播放返回片段。`arrival-v1.jpg` 仅保留为素材归档，不再充当结算背景。用户可跳过，加载错误 / 自动播放受阻 / 超过 12 秒未完成时自动显示结果；暂停和减少动态效果模式不播放。页面本身从不读取 API key，也不发生成请求。
+`src/JourneyVideo.tsx` 播放生成文件。推荐算法先抽样、先保存；视频不影响选择结果。视频正常结束后，末帧用 700ms 淡出，露出实时恒星和小吞，再显示推荐卡片。未选定目的地时收起结果，播放倒放片段，结束后恒星淡回原位；选定目的地后保持实时近星画面，收起时直接淡出、在原位淡入，不播放返回片段。用户可跳过，加载错误 / 自动播放受阻 / 超过 12 秒未完成时自动显示结果；暂停和减少动态效果模式不播放。页面本身从不读取 API key，也不发生成请求。
 
-`python3 scripts/tokenhub_video.py poll --config <本机课程配置路径>` 可查询同一任务；已有任务回执时 `submit` 拒绝重复提交。`bash scripts/prepare-video.sh` 可重建裁切版、倒放视频、末帧和接触表，不消耗云额度。
+`python3 scripts/tokenhub_video.py poll --config <本机课程配置路径>` 可查询同一任务；已有任务回执时 `submit` 拒绝重复提交。`bash scripts/prepare-video.sh` 可重建裁切版和倒放视频，调试用的末帧及接触表写入被 Git 忽略的 `test-results/media/`，不消耗云额度。
 
 当前遵循用户指定的腾讯云方案，待机背景仍是 Canvas；这不是原作业流程里即梦生成的首尾循环背景。旧图像制作与未授权生成时期的记录如下，保留为过程档案。
 
@@ -67,4 +67,4 @@ Edit the supplied cute black hole mascot image. Preserve its round navy body, tw
 
 ## 已有演示
 
-`previews/demo-current.mp4` 是 2026-10-10 重录的当前使用流程：设定偏好、完整播放首版转场、选定食堂、饭后记录和刷新后日志保留。使用 Playwright 录制真实网页、ffmpeg 编码，时长不超过 30 秒，没有调用生成模型。可通过 `scripts/record-demo.mjs` 重录。`previews/demo-draft.mp4` 保留 2026-10-04 的第一版界面流程，仅作历史参考。
+项目根目录的 [`demo-current.mp4`](../demo-current.mp4) 是 2026-10-10 重录的当前使用流程：设定偏好、完整播放首版转场、选定食堂、饭后记录和刷新后日志保留。使用 Playwright 录制真实网页、ffmpeg 编码，时长不超过 30 秒，没有调用生成模型。可通过 `scripts/record-demo.mjs` 重录。旧版录屏和测试截图已清理，历史版本可从 Git 找回。
