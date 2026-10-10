@@ -288,6 +288,39 @@ test("every recommendation can be deleted, linked meals survive, and all records
   expect(saved.locationId).toBe("zijing-dorm");
 });
 
+test("arrival fades between endpoints even when the movie is immediately skipped", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
+  const star = page.getByRole("button", { name: "查看桃李园，M 型红矮星", exact: true });
+  const origin = await star.evaluate(el => ({ x: parseFloat(el.style.left), y: parseFloat(el.style.top) }));
+  const samples = star.evaluate(async el => {
+    const frames: { x: number; y: number; opacity: number }[] = [];
+    const start = performance.now();
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        frames.push({ x: parseFloat(el.style.left), y: parseFloat(el.style.top), opacity: Number(el.style.opacity) });
+        if (performance.now() - start > 1400) resolve(); else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    return frames;
+  });
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
+  await page.getByRole("button", { name: "跳过，查看推荐" }).click();
+  await expect(page.locator(".result-card")).toBeVisible();
+  const frames = await samples;
+  const arrived = frames.at(-1)!;
+  expect(Math.hypot(arrived.x - origin.x, arrived.y - origin.y)).toBeGreaterThan(30);
+  expect(frames.some(f => f.opacity === 0)).toBe(true);
+  expect(arrived.opacity).toBe(1);
+  for (const frame of frames.filter(f => f.opacity > 0)) {
+    const nearOrigin = Math.hypot(frame.x - origin.x, frame.y - origin.y) < 3;
+    const nearArrival = Math.hypot(frame.x - arrived.x, frame.y - arrived.y) < 3;
+    expect(nearOrigin || nearArrival).toBe(true);
+  }
+});
+
 test("video dissolves into the live settlement and reverse returns without a flyback", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");

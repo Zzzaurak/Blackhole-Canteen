@@ -67,4 +67,4 @@ Edit the supplied cute black hole mascot image. Preserve its round navy body, tw
 
 ## 已有演示
 
-`previews/demo-draft.mp4` 保留 2026-10-04 的第一版界面流程，仅用于历史参考。本轮没有重录视频；最新局部星海见 `local-arm-desktop.png`、`local-interarm-desktop.png`、`local-arm-mobile.png`。正式视频接入后再录制不超过 30 秒的最终流程。
+`previews/demo-current.mp4` 是 2026-10-10 重录的当前使用流程：设定偏好、完整播放首版转场、选定食堂、饭后记录和刷新后日志保留。使用 Playwright 录制真实网页、ffmpeg 编码，时长不超过 30 秒，没有调用生成模型。可通过 `scripts/record-demo.mjs` 重录。`previews/demo-draft.mp4` 保留 2026-10-04 的第一版界面流程，仅作历史参考。
