@@ -458,44 +458,55 @@ main {
     0 0 18px 2px color-mix(in srgb, var(--star-color) 20%, transparent),
     0 0 40px 1px color-mix(in srgb, var(--star-color) 9%, transparent);
 }
+.star-corona {
+  position: absolute;
+  inset: -85%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--star-color) 52%, transparent) 8%,
+    color-mix(in srgb, var(--star-color) 23%, transparent) 31%,
+    color-mix(in srgb, var(--star-color) 7%, transparent) 49%,
+    transparent 70%);
+  filter: blur(1px);
+}
+.star-corona:after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 12deg,
+    transparent 0deg 19deg,
+    color-mix(in srgb, var(--star-color) 26%, transparent) 23deg,
+    transparent 28deg 45deg);
+  mask-image: radial-gradient(circle, transparent 24%, #000 38%, transparent 68%);
+}
 .star-surface {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 32% 25%,
-    #fff5db 0%,
-    var(--star-color) 28%,
-    color-mix(in srgb, var(--star-color) 70%, #1f0e32) 70%,
-    #281126 100%
-  );
+  background: radial-gradient(circle at center,
+    var(--star-core, #fff6dc) 0%,
+    color-mix(in srgb, var(--star-color) 28%, #fffbea) 22%,
+    color-mix(in srgb, var(--star-color) 70%, #fffbea) 51%,
+    var(--star-color) 76%,
+    color-mix(in srgb, var(--star-color) 45%, transparent) 100%);
   box-shadow:
-    inset -3px -5px 8px #16072275,
-    inset 1px 1px 4px #ffffff80;
+    0 0 5px color-mix(in srgb, var(--star-color) 90%, white),
+    0 0 13px color-mix(in srgb, var(--star-color) 55%, transparent);
   overflow: hidden;
 }
 .star-surface:after {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-radial-gradient(
-    ellipse at 32% 30%,
-    transparent 0 3px,
-    #fff2 4px,
-    transparent 6px
-  );
-  opacity: 0.3;
-  transform: rotate(35deg);
+  background:
+    repeating-conic-gradient(from 32deg, #fff0 0deg 21deg, #fff5 28deg, #fff0 42deg),
+    radial-gradient(ellipse at 60% 65%, #fff6, transparent 50%);
+  opacity: 0.15;
+  mix-blend-mode: screen;
 }
-.star-body.red .star-surface {
-  background: radial-gradient(
-    circle at 35% 30%,
-    #ffd2ae,
-    #e77765 30%,
-    #9b303c 75%,
-    #4b192b
-  );
-}
+.star-body.red { --star-core: #ffe5ba; }
 .star-body.variable {
   animation: pulsate 5s ease-in-out infinite;
 }
@@ -512,18 +523,8 @@ main {
     0 0 9px 2px #e6f6ff80,
     0 0 24px #adc4e933;
 }
-.star-body.dwarf .star-surface {
-  background: radial-gradient(circle at 35% 35%, #fff, #d8e7ff 70%, #9aaccb);
-}
-.star-body.giant .star-surface {
-  background: radial-gradient(
-    circle at 34% 29%,
-    #ffe1a5,
-    #eba25d 40%,
-    #b96040 75%,
-    #82382d
-  );
-}
+.star-body.dwarf { --star-core: #ffffff; }
+.star-body.giant { --star-core: #fff0c5; }
 .star-body.giant {
   box-shadow:
     0 0 22px #ffa7672a,
@@ -2428,7 +2429,7 @@ main {
   padding: 0;
   display: grid;
   place-items: center;
-  transition: opacity 0.3s;
+  transition: none;
 }
 .local-space .star-node:hover {
   background: transparent;
@@ -2437,9 +2438,10 @@ main {
 .local-space .star-node .star-body {
   --star-size: 14px !important;
   transform: scale(var(--approach-scale, 1));
+  transition: none;
   box-shadow:
-    0 0 14px color-mix(in srgb, var(--star-color) 30%, transparent),
-    0 0 34px color-mix(in srgb, var(--star-color) 10%, transparent);
+    0 0 12px color-mix(in srgb, var(--star-color) 50%, transparent),
+    0 0 30px color-mix(in srgb, var(--star-color) 18%, transparent);
 }
 .local-space .star-node .giant {
   --star-size: 22px !important;
@@ -2575,8 +2577,7 @@ main {
 }
 
 /* The generated movie only covers the local scene during a journey. */
-.journey-overlay,
-.arrival-backdrop {
+.journey-overlay {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2586,8 +2587,10 @@ main {
 }
 .journey-overlay {
   z-index: 12;
-  background: #080c17;
+  background: transparent;
+  transition: opacity 700ms ease-in-out;
 }
+.journey-overlay.leaving { opacity: 0; pointer-events: none; }
 .journey-overlay video {
   display: block;
   width: 100%;
@@ -2604,16 +2607,9 @@ main {
   background: #10131fe6;
   z-index: 1;
 }
-.cinematic-arrival .galaxy-canvas,
-.cinematic-arrival .drifting-star,
-.cinematic-arrival .mascot { visibility: hidden; }
-.cinematic-arrival .space-topline,
-.cinematic-arrival .space-bottomline,
-.cinematic-arrival .result-card { z-index: 7; }
 .history-row { flex-wrap: wrap; }
 @media (max-width: 560px) {
-  .journey-overlay video,
-  .arrival-backdrop {
+  .journey-overlay video {
     object-fit: contain;
     object-position: center 28%;
     background: #080c17;

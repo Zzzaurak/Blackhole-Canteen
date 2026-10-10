@@ -50,7 +50,7 @@ export default function Galaxy(props: Props) {
       previous = 0;
     let arm = current.current.inArm ? 1 : 0;
     const field = getSpiralField();
-    const nodes = anchors.map(() => ({ travel: 0, focus: 0 }));
+    const nodes = anchors.map(() => ({ travel: 0, focus: 0, returnElapsed: -1 }));
     const sprites = canteens.map((c) => {
       const sprite = document.createElement("canvas");
       sprite.width = sprite.height = 80;
@@ -107,10 +107,30 @@ export default function Galaxy(props: Props) {
         const hold =
           hovered.current === canteens[i].id ||
           document.activeElement === element;
-        if (!paused && !document.hidden && !hold) node.travel += dt / 1000;
-        node.focus +=
-          ((target ? 1 : 0) - node.focus) *
-          (paused ? 1 : 1 - Math.exp(-dt / 430));
+        let fade = 1;
+        if (target) {
+          node.returnElapsed = -1;
+          node.focus += (1 - node.focus) * (paused ? 1 : 1 - Math.exp(-dt / 430));
+        } else if (paused) {
+          node.focus = 0;
+          node.returnElapsed = -1;
+        } else {
+          if (node.focus > 0 && node.returnElapsed < 0) node.returnElapsed = 0;
+          if (node.returnElapsed >= 0) {
+            node.returnElapsed += dt;
+            if (node.returnElapsed < 260) {
+              fade = 1 - node.returnElapsed / 260;
+            } else {
+              // Relocate only while invisible, then reveal at the saved drift position.
+              node.focus = 0;
+              fade = Math.min(1, (node.returnElapsed - 260) / 420);
+            }
+            if (node.returnElapsed >= 680) node.returnElapsed = -1;
+          }
+        }
+        if (!paused && !document.hidden && !hold && !target && node.returnElapsed < 0) {
+          node.travel += dt / 1000;
+        }
         const x =
           wrap(
             anchors[i][0] * (width + 100) - node.travel * (0.42 + i * 0.025),
@@ -135,7 +155,7 @@ export default function Galaxy(props: Props) {
         );
         element.style.left = `${px}px`;
         element.style.top = `${py}px`;
-        element.style.opacity = String(hold || target ? 1 : 0.4 + edge * 0.6);
+        element.style.opacity = String(fade * (hold || target ? 1 : 0.4 + edge * 0.6));
         element.style.setProperty(
           "--approach-scale",
           String(1 + node.focus * 0.55),

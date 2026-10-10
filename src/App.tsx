@@ -316,7 +316,6 @@ export default function App() {
   const [result, setResult] = useState<Recommendation | null>(null);
   const [busy, setBusy] = useState(false);
   const [journey, setJourney] = useState<"depart" | "return" | null>(null);
-  const [arrived, setArrived] = useState(false);
   const busyRef = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [paused, setPaused] = useState(
@@ -400,7 +399,6 @@ export default function App() {
     setBusy(true);
     setResult(recommendation);
     setShowProbability(false);
-    setArrived(false);
     if (!paused && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setJourney("depart");
     } else {
@@ -410,28 +408,30 @@ export default function App() {
       }, 150);
     }
   };
-  const finishJourney = (played: boolean) => {
-    setArrived(journey === "depart" && played);
+  // Reset the target underneath the dissolving return video, never after it.
+  const revealLiveScene = () => {
     if (journey === "return") setResult(null);
+  };
+  const finishJourney = () => {
     setJourney(null);
     busyRef.current = false;
     setBusy(false);
   };
   const closeResult = () => {
-    if (arrived && !paused && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!result || busyRef.current) return;
+    if (!result.accepted && !paused && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       busyRef.current = true;
       setBusy(true);
       setJourney("return");
     } else {
+      // Accepted destinations stay selected in history; only dismiss the scene.
       setResult(null);
-      setArrived(false);
     }
   };
   useEffect(() => {
     if (page !== "home" || (paused && journey)) {
       clearTimeout(timer.current);
       setJourney(null);
-      setArrived(false);
       if (journey === "return") setResult(null);
       busyRef.current = false;
       setBusy(false);
@@ -564,25 +564,24 @@ export default function App() {
             </section>
             <div className="home-grid">
               <section
-                className={`space-card local-space ${openCount ? "inside-arm" : "between-arms"} ${busy ? "traveling" : ""} ${arrived ? "cinematic-arrival" : ""} ${journey ? "cinematic-playing" : ""} ${celebrate ? "celebrating" : ""}`}
+                className={`space-card local-space ${openCount ? "inside-arm" : "between-arms"} ${busy ? "traveling" : ""} ${journey ? "cinematic-playing" : ""} ${celebrate ? "celebrating" : ""}`}
                 data-region={openCount ? "arm" : "interarm"}
                 aria-label="食堂星系"
               >
                 <Galaxy
-                  paused={paused || !!journey || arrived}
+                  paused={paused}
                   inArm={openCount > 0}
                   time={conditions.time}
                   activeCanteenId={activeStar?.id ?? null}
                   celebrating={!!celebrate}
                   onInspect={setDetail}
                 />
-                {arrived && <img className="arrival-backdrop" src={asset("arrival-v1.jpg")} alt="小吞抵达恒星旁" />}
-                {journey && <JourneyVideo key={journey} direction={journey} onComplete={finishJourney} />}
+                {journey && <JourneyVideo key={journey} direction={journey} onReveal={revealLiveScene} onComplete={finishJourney} />}
                 <div className="space-vignette" />
                 <div className="space-topline">
                   <div>
                     <span className="live-dot" /> {COPY.scene.name}
-                    <small>{arrived ? COPY.scene.arrivalCoordinates : COPY.scene.coordinates}</small>
+                    <small>{COPY.scene.coordinates}</small>
                   </div>
                   <span className="region-badge" aria-live="polite">
                     <i />
@@ -660,12 +659,12 @@ export default function App() {
                       </div>
                       <div className="result-actions">
                         {!resultRecorded && !result.accepted && (
-                          <button className="soft-button" onClick={accept}>
+                          <button className="primary compact" onClick={accept}>
                             <Check size={15} /> {COPY.result.accept}
                           </button>
                         )}
                         <button
-                          className="primary compact"
+                          className="soft-button"
                           onClick={() =>
                             resultRecorded
                               ? setPage("journal")
@@ -727,7 +726,7 @@ export default function App() {
                     颗恒星在参考供餐时段内
                   </span>
                   <span>
-                    {arrived ? COPY.scene.arrivalViewLabel : COPY.scene.viewLabel} <CircleHelp size={12} />
+                    {result && !busy ? COPY.scene.arrivalViewLabel : COPY.scene.viewLabel} <CircleHelp size={12} />
                   </span>
                 </div>
               </section>
@@ -1186,7 +1185,6 @@ export default function App() {
                                 setBusy(false);
                                 setResult(null);
                                 setJourney(null);
-                                setArrived(false);
                               }
                               notify("推荐记录已删除，用餐记录已保留。");
                             }
@@ -1322,7 +1320,6 @@ export default function App() {
                       setBusy(false);
                       setResult(null);
                       setJourney(null);
-                      setArrived(false);
                       setMealDialog(null);
                       setCelebrate(null);
                       notify("所有用餐和推荐记录已清空。");
@@ -1372,7 +1369,6 @@ export default function App() {
                           busyRef.current = false;
                           setBusy(false);
                           setJourney(null);
-                          setArrived(false);
                           setResult(null);
                           setPendingImport(null);
                           notify("备份已恢复。");

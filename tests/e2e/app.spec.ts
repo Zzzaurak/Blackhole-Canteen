@@ -288,7 +288,7 @@ test("every recommendation can be deleted, linked meals survive, and all records
   expect(saved.locationId).toBe("zijing-dorm");
 });
 
-test("generated departure and return play once without changing the recommendation", async ({ page }) => {
+test("video dissolves into the live settlement and reverse returns without a flyback", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
@@ -297,11 +297,44 @@ test("generated departure and return play once without changing the recommendati
   await expect(video).toBeVisible();
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(0);
   await expect(page.locator(".result-card")).toContainText("桃李园", { timeout: 15000 });
-  await expect(page.locator(".arrival-backdrop")).toBeVisible();
+  await expect(page.locator(".arrival-backdrop")).toHaveCount(0);
+  await expect(page.locator(".galaxy-canvas")).toBeVisible();
+  await expect(page.locator(".star-node.target")).toBeVisible();
+  const position = await page.locator(".star-node.target").evaluate(el => ({
+    x: parseFloat((el as HTMLElement).style.left) / el.parentElement!.clientWidth,
+    y: parseFloat((el as HTMLElement).style.top) / el.parentElement!.clientHeight,
+  }));
+  expect(position.x).toBeCloseTo(0.65, 2);
+  expect(position.y).toBeCloseTo(0.44, 2);
+  const settled = await page.locator(".star-node.target").evaluate(el => ({
+    x: parseFloat((el as HTMLElement).style.left), y: parseFloat((el as HTMLElement).style.top),
+  }));
+  const samples = page.evaluate(async () => {
+    const star = document.querySelector<HTMLElement>(".star-node.target")!;
+    const frames: { x: number; y: number; opacity: number }[] = [];
+    const start = performance.now();
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        frames.push({x: parseFloat(star.style.left), y: parseFloat(star.style.top), opacity: Number(star.style.opacity)});
+        if (performance.now() - start > 7200) resolve(); else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    return frames;
+  });
   await page.getByRole("button", { name: "收起推荐结果" }).click();
   await expect(page.getByLabel("返回星海的转场视频")).toBeVisible();
   await expect(page.locator(".journey-overlay")).toHaveCount(0, { timeout: 15000 });
   await expect(page.locator(".result-card")).toHaveCount(0);
+  const frames = await samples;
+  const restored = frames.at(-1)!;
+  expect(frames.some(f => f.opacity < 0.1)).toBe(true);
+  // A visible star may be at either endpoint, never moving through the gap.
+  for (const frame of frames.filter(f => f.opacity > 0.1)) {
+    const nearTarget = Math.hypot(frame.x - settled.x, frame.y - settled.y) < 3;
+    const nearOrigin = Math.hypot(frame.x - restored.x, frame.y - restored.y) < 3;
+    expect(nearTarget || nearOrigin).toBe(true);
+  }
   const count = await page.evaluate(() => JSON.parse(localStorage.getItem("stellar-bites:v1")!).recommendations.length);
   expect(count).toBe(1);
 });
@@ -319,4 +352,34 @@ test("failed video and skipped video both leave a usable result", async ({ page 
   await page.getByRole("button", { name: "跳过，查看推荐" }).click();
   await expect(page.locator(".result-card")).toContainText("桃李园");
   await expect(page.locator(".journey-overlay")).toHaveCount(0);
+});
+
+
+test("accept remains live; dismiss fades the star home without another video", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  let returnRequests = 0;
+  page.on("request", req => { if (req.url().includes("return-v1.mp4")) returnRequests++; });
+  await page.goto("/");
+  await page.getByLabel("准备几点吃", { exact: true }).fill("22:30");
+  const star = page.getByRole("button", { name: "查看桃李园，M 型红矮星", exact: true });
+  const original = await star.evaluate(el => ({ x: parseFloat(el.style.left), y: parseFloat(el.style.top) }));
+  await page.getByRole("button", { name: "吃什么？", exact: true }).click();
+  await page.getByRole("button", { name: "跳过，查看推荐" }).click();
+  await expect(page.locator(".result-card")).toBeVisible();
+  await expect(page.getByRole("button", { name: "就去这里", exact: true })).toHaveClass(/primary/);
+  await expect(page.getByRole("button", { name: "饭后记录", exact: true })).toHaveClass(/soft-button/);
+  await page.getByRole("button", { name: "就去这里", exact: true }).click();
+  await expect(page.locator(".result-card")).toContainText("目的地已选定");
+  await expect(star).toHaveClass(/target/);
+  await expect(page.locator(".galaxy-canvas")).toBeVisible();
+  await page.getByRole("button", { name: "收起推荐结果" }).click();
+  await expect(page.locator(".journey-overlay")).toHaveCount(0);
+  await expect.poll(() => star.evaluate(el => Number(el.style.opacity))).toBeLessThan(0.5);
+  await expect.poll(() => star.evaluate(el => Number(el.style.opacity))).toBeGreaterThan(0.9);
+  const restored = await star.evaluate(el => ({ x: parseFloat(el.style.left), y: parseFloat(el.style.top) }));
+  expect(Math.hypot(restored.x - original.x, restored.y - original.y)).toBeLessThan(3);
+  expect(returnRequests).toBe(0);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("stellar-bites:v1")!));
+  expect(saved.recommendations).toHaveLength(1);
+  expect(saved.recommendations[0].accepted).toBe(true);
 });

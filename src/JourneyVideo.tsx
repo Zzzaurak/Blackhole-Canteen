@@ -1,27 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 
 /** One downloaded movie, shared across recommendations. No cloud requests in the app. */
-export default function JourneyVideo({ direction, onComplete }: {
+export default function JourneyVideo({ direction, onReveal, onComplete }: {
   direction: "depart" | "return";
-  onComplete: (played: boolean) => void;
+  onReveal: () => void;
+  onComplete: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
-  const callback = useRef(onComplete);
-  callback.current = onComplete;
-  const finish = useRef<(played: boolean) => void>(() => {});
+  const callbacks = useRef({ onReveal, onComplete });
+  callbacks.current = { onReveal, onComplete };
+  const finish = useRef<() => void>(() => {});
+  const [leaving, setLeaving] = useState(false);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const element = video.current!;
     let completed = false;
-    const done = (played: boolean) => {
+    let dissolve: ReturnType<typeof setTimeout> | undefined;
+    const done = () => {
       if (completed) return;
       completed = true;
       element.pause();
-      callback.current(played);
+      clearTimeout(watchdog);
+      // Keep the last decoded frame while the actual stars and mascot emerge.
+      callbacks.current.onReveal();
+      setLeaving(true);
+      dissolve = setTimeout(() => callbacks.current.onComplete(), 700);
     };
     finish.current = done;
-    const ended = () => done(true);
-    const failed = () => done(false);
+    const ended = () => done();
+    const failed = () => done();
     element.addEventListener("ended", ended);
     element.addEventListener("error", failed);
     // Broken, stalled or autoplay-blocked media must never block the meal flow.
@@ -30,12 +37,13 @@ export default function JourneyVideo({ direction, onComplete }: {
     return () => {
       completed = true;
       clearTimeout(watchdog);
+      clearTimeout(dissolve);
       element.pause();
       element.removeEventListener("ended", ended);
       element.removeEventListener("error", failed);
     };
   }, [direction]);
-  return <div className={`journey-overlay ${ready ? "ready" : ""}`}>
+  return <div className={`journey-overlay ${ready ? "ready" : ""} ${leaving ? "leaving" : ""}`}>
     <video
       ref={video}
       src={`${import.meta.env.BASE_URL}assets/${direction === "depart" ? "departure" : "return"}-v1.mp4`}
@@ -43,7 +51,7 @@ export default function JourneyVideo({ direction, onComplete }: {
       onPlaying={() => setReady(true)}
       aria-label={direction === "depart" ? "前往恒星的转场视频" : "返回星海的转场视频"}
     />
-    <button className="soft-button journey-skip" onClick={() => finish.current(false)}>
+    <button className="soft-button journey-skip" disabled={leaving} onClick={() => finish.current()}>
       {direction === "depart" ? "跳过，查看推荐" : "跳过，返回星海"}
     </button>
   </div>;

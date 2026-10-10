@@ -18,12 +18,13 @@ export default function StarBody({
         } as CSSProperties
       }
     >
+      <span className="star-corona" aria-hidden="true" />
       <span className="star-surface" />
       {canteen.companions.map((c, i) => (
         <i
           key={c.name}
           className={`companion companion-${i}`}
-          style={{ background: c.color }}
+          style={{ color: c.color, background: `radial-gradient(circle, #fff9e9 10%, ${c.color} 65%, transparent 100%)` }}
         />
       ))}
     </span>
